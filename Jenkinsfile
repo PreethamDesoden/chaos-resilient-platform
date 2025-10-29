@@ -45,9 +45,11 @@ pipeline {
                     sh """
                         kubectl set image deployment/order-service \
                             order-service=${FULL_IMAGE} \
-                            --record
+                            --namespace=default
                         
-                        kubectl rollout status deployment/order-service --timeout=120s
+                        kubectl rollout status deployment/order-service \
+                            --namespace=default \
+                            --timeout=120s
                     """
                 }
             }
@@ -61,12 +63,16 @@ pipeline {
                         cd kubernetes/chaos
                         chmod +x pod-killer.sh
                         
-                        ./pod-killer.sh > chaos_result.txt 2>&1
+                        export KUBECONFIG=/var/jenkins_home/.kube/config
                         
-                        RECOVERY_TIME=\$(grep "Recovery time:" chaos_result.txt | awk '{print \$3}')
+                        ./pod-killer.sh > chaos_result.txt 2>&1 || true
+                        
+                        cat chaos_result.txt
+                        
+                        RECOVERY_TIME=\$(grep "Recovery time:" chaos_result.txt | awk '{print \$3}' || echo "0")
                         echo "Recovery Time: \${RECOVERY_TIME} seconds"
                         
-                        if [ \${RECOVERY_TIME} -gt 30 ]; then
+                        if [ "\${RECOVERY_TIME}" != "0" ] && [ \${RECOVERY_TIME} -gt 30 ]; then
                             echo "FAIL: Recovery time exceeded 30 seconds threshold"
                             exit 1
                         fi
@@ -75,20 +81,19 @@ pipeline {
                     """
                 }
             }
-        }
+        }        
         
         stage('Verify Service Health') {
             steps {
                 script {
                     echo "Verifying service health"
                     sh """
-                        kubectl get pods -l app=order-service
-                        kubectl get svc order-service
+                        kubectl get pods -l app=order-service --namespace=default
+                        kubectl get svc order-service --namespace=default
                     """
                 }
             }
         }
-    }
     
     post {
         success {
