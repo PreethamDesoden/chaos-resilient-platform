@@ -9,7 +9,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 COPY --from=builder /root/.local /root/.local
-COPY app.py .
+COPY app.py metrics.py ./
 
 ENV PATH=/root/.local/bin:$PATH
 ENV PYTHONUNBUFFERED=1
