@@ -1,8 +1,17 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
 metadata:
   name: jenkins
-  namespace: jenkins
+rules:
+- apiGroups: [""]
+  resources: ["pods", "pods/exec", "pods/log"]
+  verbs: ["get", "list", "watch", "create", "delete"]
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "list", "create", "update", "patch", "delete"]   
+- apiGroups: ["apps"]
+  resources: ["deployments/status"]
+  verbs: ["get", "list", "watch"]
 spec:
   replicas: 1
   selector:
@@ -38,8 +47,11 @@ spec:
         env:
         - name: DOCKER_TLS_CERTDIR
           value: ""
+        - name: DOCKER_OPTS
+          value: "--dns 8.8.8.8 --dns 8.8.4.4"
         args:
         - "--insecure-registry=registry.default.svc.cluster.local:5000"
+        - "--ip6tables=false"
         volumeMounts:
         - name: docker-sock
           mountPath: /var/run

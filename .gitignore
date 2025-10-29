@@ -7,3 +7,4 @@ __pycache__/
 .vscode/
 .idea/
 venv/
+*jenkins-backup.tar.gz
