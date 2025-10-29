@@ -81,7 +81,7 @@ pipeline {
                     """
                 }
             }
-        }        
+        }
         
         stage('Verify Service Health') {
             steps {
@@ -94,6 +94,7 @@ pipeline {
                 }
             }
         }
+    }
     
     post {
         success {
