@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jenkins
+  namespace: jenkins
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jenkins
+  template:
+    metadata:
+      labels:
+        app: jenkins
+    spec:
+      serviceAccountName: jenkins
+      containers:
+      - name: jenkins
+        image: jenkins-with-tools:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8080
+        - containerPort: 50000
+        volumeMounts:
+        - name: jenkins-home
+          mountPath: /var/jenkins_home
+        - name: docker-sock
+          mountPath: /var/run
+        env:
+        - name: DOCKER_HOST
+          value: tcp://localhost:2375
+        - name: JAVA_OPTS
+          value: "-Djenkins.install.runSetupWizard=false"
+      - name: dind
+        image: docker:dind
+        securityContext:
+          privileged: true
+        env:
+        - name: DOCKER_TLS_CERTDIR
+          value: ""
+        args:
+        - "--insecure-registry=registry.default.svc.cluster.local:5000"
+        volumeMounts:
+        - name: docker-sock
+          mountPath: /var/run
+      volumes:
+      - name: jenkins-home
+        persistentVolumeClaim:
+          claimName: jenkins-pvc
+      - name: docker-sock
+        emptyDir: {}

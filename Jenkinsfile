@@ -4,7 +4,8 @@ pipeline {
     environment {
         DOCKER_IMAGE = 'order-service'
         IMAGE_TAG = "v${BUILD_NUMBER}"
-        KIND_CLUSTER = 'chaos-platform'
+        REGISTRY = 'registry.default.svc.cluster.local:5000'
+        FULL_IMAGE = "${REGISTRY}/${DOCKER_IMAGE}:${IMAGE_TAG}"
     }
     
     stages {
@@ -18,20 +19,21 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    echo "Building ${DOCKER_IMAGE}:${IMAGE_TAG}"
+                    echo "Building ${FULL_IMAGE}"
                     sh """
-                        docker build -t ${DOCKER_IMAGE}:${IMAGE_TAG} ./services/order-service
-                        docker tag ${DOCKER_IMAGE}:${IMAGE_TAG} ${DOCKER_IMAGE}:latest
+                        docker build -t ${FULL_IMAGE} ./services/order-service
                     """
                 }
             }
         }
         
-        stage('Load Image to KIND') {
+        stage('Push to Registry') {
             steps {
                 script {
-                    echo "Loading image to KIND cluster"
-                    sh "kind load docker-image ${DOCKER_IMAGE}:${IMAGE_TAG} --name ${KIND_CLUSTER}"
+                    echo "Pushing to registry"
+                    sh """
+                        docker push ${FULL_IMAGE}
+                    """
                 }
             }
         }
@@ -41,7 +43,10 @@ pipeline {
                 script {
                     echo "Deploying to Kubernetes"
                     sh """
-                        kubectl set image deployment/order-service order-service=${DOCKER_IMAGE}:${IMAGE_TAG}
+                        kubectl set image deployment/order-service \
+                            order-service=${FULL_IMAGE} \
+                            --record
+                        
                         kubectl rollout status deployment/order-service --timeout=120s
                     """
                 }
@@ -56,14 +61,11 @@ pipeline {
                         cd kubernetes/chaos
                         chmod +x pod-killer.sh
                         
-                        # Run pod killer and capture recovery time
                         ./pod-killer.sh > chaos_result.txt 2>&1
                         
-                        # Extract recovery time
                         RECOVERY_TIME=\$(grep "Recovery time:" chaos_result.txt | awk '{print \$3}')
                         echo "Recovery Time: \${RECOVERY_TIME} seconds"
                         
-                        # Fail if recovery > 30 seconds
                         if [ \${RECOVERY_TIME} -gt 30 ]; then
                             echo "FAIL: Recovery time exceeded 30 seconds threshold"
                             exit 1
