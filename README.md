@@ -49,3 +49,14 @@ curl -X POST http://localhost:5000/orders -H "Content-Type: application/json" -d
 ```
 
 ## Next: Phase 2 - Chaos Engineering
+## Phase 2 Status: ✅ COMPLETE
+- [x] Chaos scripts (pod killer, network delay)
+- [x] Recovery time tracking (9-13 seconds average)
+- [x] Service availability testing during failures
+- [x] Documented chaos test results
+
+## Phase 3 Status: ✅ COMPLETE
+- [x] Prometheus metrics collection
+- [x] Custom application metrics (request rate, latency, errors)
+- [x] Grafana dashboard with real-time visualization
+- [x] Chaos impact visible in metrics (latency spikes, error rates)
