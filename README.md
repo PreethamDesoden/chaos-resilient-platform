@@ -78,7 +78,7 @@ Developer → GitHub → Jenkins → KIND Cluster → Chaos Tests → ✅/❌
                     Grafana (Dashboards)
 ```
 
-**[View Detailed Architecture Diagram →](Architecture-diagram/architecture-diagram(CPR).png)**
+**[View Detailed Architecture Diagram →](docs/Architecture-diagram/architecture-diagram(CRP).png)**
 
 ### System Components
 
