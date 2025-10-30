@@ -1,4 +1,4 @@
-# 🚀 Chaos-Resilient Microservices Platform
+# Chaos-Resilient Microservices Platform
 
 > Production-grade self-healing infrastructure with automated chaos engineering, demonstrating Site Reliability Engineering (SRE) practices through Kubernetes orchestration, comprehensive observability, and CI/CD automation.
 
@@ -78,7 +78,7 @@ Developer → GitHub → Jenkins → KIND Cluster → Chaos Tests → ✅/❌
                     Grafana (Dashboards)
 ```
 
-**[View Detailed Architecture Diagram →](docs/architecture-diagram(CPR).png)**
+**[View Detailed Architecture Diagram →](Architecture-diagram/architecture-diagram(CPR).png)**
 
 ### System Components
 
