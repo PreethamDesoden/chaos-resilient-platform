@@ -4,8 +4,7 @@ pipeline {
     environment {
         DOCKER_IMAGE = 'order-service'
         IMAGE_TAG = "v${BUILD_NUMBER}"
-        REGISTRY = 'registry.default.svc.cluster.local:5000'
-        FULL_IMAGE = "${REGISTRY}/${DOCKER_IMAGE}:${IMAGE_TAG}"
+        KIND_CLUSTER = 'chaos-platform'
     }
     
     stages {
@@ -16,23 +15,27 @@ pipeline {
             }
         }
         
-        stage('Build Docker Image') {
+        stage('Build Docker Images') {
             steps {
                 script {
-                    echo "Building ${FULL_IMAGE}"
+                    echo "Building images locally"
                     sh """
-                        docker build -t ${FULL_IMAGE} ./services/order-service
+                        docker build -t ${DOCKER_IMAGE}:${IMAGE_TAG} ./services/order-service
+                        docker build -t inventory-service:${IMAGE_TAG} ./services/inventory-service
+                        docker build -t notification-service:${IMAGE_TAG} ./services/notification-service
                     """
                 }
             }
         }
         
-        stage('Push to Registry') {
+        stage('Load Images to KIND') {
             steps {
                 script {
-                    echo "Pushing to registry"
+                    echo "Loading images to KIND cluster"
                     sh """
-                        docker push ${FULL_IMAGE}
+                        kind load docker-image ${DOCKER_IMAGE}:${IMAGE_TAG} --name ${KIND_CLUSTER}
+                        kind load docker-image inventory-service:${IMAGE_TAG} --name ${KIND_CLUSTER}
+                        kind load docker-image notification-service:${IMAGE_TAG} --name ${KIND_CLUSTER}
                     """
                 }
             }
@@ -43,13 +46,13 @@ pipeline {
                 script {
                     echo "Deploying to Kubernetes"
                     sh """
-                        kubectl set image deployment/order-service \
-                            order-service=${FULL_IMAGE} \
-                            --namespace=default
+                        kubectl set image deployment/order-service order-service=${DOCKER_IMAGE}:${IMAGE_TAG}
+                        kubectl set image deployment/inventory-service inventory-service=inventory-service:${IMAGE_TAG}
+                        kubectl set image deployment/notification-service notification-service=notification-service:${IMAGE_TAG}
                         
-                        kubectl rollout status deployment/order-service \
-                            --namespace=default \
-                            --timeout=120s
+                        kubectl rollout status deployment/order-service --timeout=120s
+                        kubectl rollout status deployment/inventory-service --timeout=120s
+                        kubectl rollout status deployment/notification-service --timeout=120s
                     """
                 }
             }
@@ -62,8 +65,6 @@ pipeline {
                     sh """
                         cd kubernetes/chaos
                         chmod +x pod-killer.sh
-                        
-                        export KUBECONFIG=/var/jenkins_home/.kube/config
                         
                         ./pod-killer.sh > chaos_result.txt 2>&1 || true
                         
@@ -88,8 +89,8 @@ pipeline {
                 script {
                     echo "Verifying service health"
                     sh """
-                        kubectl get pods -l app=order-service --namespace=default
-                        kubectl get svc order-service --namespace=default
+                        kubectl get pods
+                        kubectl get svc
                     """
                 }
             }
@@ -98,13 +99,13 @@ pipeline {
     
     post {
         success {
-            echo '✅ Pipeline completed successfully!'
+            echo '✅ Pipeline completed successfully! All chaos tests passed.'
         }
         failure {
             echo '❌ Pipeline failed. Check logs above.'
         }
         always {
-            echo 'Cleaning up...'
+            echo 'Pipeline execution complete.'
         }
     }
 }
