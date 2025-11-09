@@ -165,6 +165,36 @@ curl -X POST http://localhost:5000/orders \
 ```
 
 ---
+## 🚀 Simplified Startup (Recommended)
+
+### Daily Usage
+```bash
+# Start everything
+./start.sh
+
+# Stop everything
+./stop.sh
+```
+
+### First Time Setup
+```bash
+# Prerequisites: Docker Desktop running
+git clone https://github.com/PreethamDesoden/chaos-resilient-platform.git
+cd chaos-resilient-platform
+./start.sh
+
+# Access services:
+# - Jenkins: http://localhost:8080
+# - Grafana: http://localhost:3000
+# - Order API: http://localhost:5000
+```
+
+### Troubleshooting
+```bash
+# If something breaks, clean start:
+./clean.sh
+./start.sh
+```
 
 ## 📦 Project Phases
 
